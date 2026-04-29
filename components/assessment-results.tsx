@@ -1,107 +1,148 @@
 'use client';
 
 import React from 'react';
-import { AssessmentResult, getRiskCategoryColor, getRiskCategoryBgColor } from '@/lib/saw-engine';
+import { AssessmentResult, getRiskColor, getRiskBgColor } from '@/lib/saw-engine';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, TrendingUp, Gauge, Activity } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { AlertTriangle, TrendingUp, Activity, Layers } from 'lucide-react';
 
 interface AssessmentResultsProps {
   result: AssessmentResult;
   timestamp?: Date;
 }
 
+const NORM_BADGE: Record<string, string> = {
+  Binary:    'bg-gray-100 text-gray-700',
+  MinMax:    'bg-blue-100 text-blue-700',
+  SweetSpot: 'bg-purple-100 text-purple-700',
+  Ordinal:   'bg-amber-100 text-amber-700',
+};
+
+function FeatureTable({
+  features,
+  title,
+  description,
+}: {
+  features: AssessmentResult['stage1Features'];
+  title: string;
+  description: string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="text-left py-2 px-3 font-semibold text-gray-700">Feature</th>
+                <th className="text-left py-2 px-3 font-semibold text-gray-700">Raw</th>
+                <th className="text-right py-2 px-3 font-semibold text-gray-700">Norm.</th>
+                <th className="text-right py-2 px-3 font-semibold text-gray-700">Weight</th>
+                <th className="text-right py-2 px-3 font-semibold text-gray-700">Contrib.</th>
+                <th className="text-left py-2 px-3 font-semibold text-gray-700">Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {features.map((f) => (
+                <tr key={f.feature} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-2 px-3 font-medium text-gray-800">{f.displayName}</td>
+                  <td className="py-2 px-3 text-xs font-mono text-gray-600">
+                    {typeof f.rawValue === 'number' ? f.rawValue.toFixed(2) : f.rawValue}
+                  </td>
+                  <td className="text-right py-2 px-3 font-mono font-semibold text-blue-600">
+                    {f.normalizedValue.toFixed(4)}
+                  </td>
+                  <td className="text-right py-2 px-3 font-mono text-purple-600">
+                    {(f.weight * 100).toFixed(2)}%
+                  </td>
+                  <td className="text-right py-2 px-3 font-mono font-semibold text-emerald-600">
+                    {f.contribution.toFixed(4)}
+                  </td>
+                  <td className="py-2 px-3">
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded ${NORM_BADGE[f.normType] ?? 'bg-gray-100'}`}
+                    >
+                      {f.normType}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AssessmentResults({ result, timestamp }: AssessmentResultsProps) {
-  // Prepare data for feature contribution chart
-  const featureData = result.featureScores.map((score) => ({
-    name: score.name,
-    value: Math.round(score.contribution * 1000) / 10, // Convert to percentage
-  }));
+  const bgBorder = getRiskBgColor(result.riskCategory);
+  const textColor = getRiskColor(result.riskCategory);
 
-  // Colors for visualization
-  const riskColors = {
-    Low: '#22c55e',
-    Moderate: '#f59e0b',
-    High: '#ff6b6b',
-    'Very High': '#dc2626',
-  };
-
-  const normalizedColors = {
-    Benefit: '#06b6d4',
-    Cost: '#ef4444',
-    SweetSpot: '#8b5cf6',
-  };
+  const gaugeColor =
+    result.riskPercentage < 25
+      ? 'bg-green-500'
+      : result.riskPercentage < 45
+        ? 'bg-yellow-500'
+        : 'bg-red-500';
 
   return (
     <div className="w-full space-y-6">
-      {/* Main Risk Assessment Card */}
-      <Card
-        className={`border-2 ${getRiskCategoryBgColor(result.riskCategory).split(' ')[1]}`}
-      >
+      {/* ── Main Risk Card ───────────────────────────────────────────────────── */}
+      <Card className={`border-2 ${bgBorder}`}>
         <CardHeader className="pb-4">
-          <CardTitle className={`text-4xl font-bold ${getRiskCategoryColor(result.riskCategory)}`}>
+          <CardTitle className={`text-4xl font-bold ${textColor}`}>
             {result.riskCategory} Risk
           </CardTitle>
           <CardDescription className="text-lg mt-2">
             Cardiovascular Risk Score: {result.riskPercentage}%
           </CardDescription>
           {timestamp && (
-            <p className="text-xs text-gray-500 mt-2">
-              Assessment performed: {timestamp.toLocaleString()}
+            <p className="text-xs text-gray-500 mt-1">
+              Assessed: {timestamp.toLocaleString()}
             </p>
           )}
         </CardHeader>
         <CardContent>
-          {/* Risk Gauge Visualization */}
+          {/* Gauge */}
           <div className="mb-6">
-            <div className="relative h-8 bg-gray-200 rounded-full overflow-hidden">
+            <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-500 ${
-                  result.riskPercentage < 25
-                    ? 'bg-green-500'
-                    : result.riskPercentage < 50
-                      ? 'bg-yellow-500'
-                      : result.riskPercentage < 75
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
-                }`}
-                style={{ width: `${result.riskPercentage}%` }}
+                className={`h-full transition-all duration-700 ${gaugeColor}`}
+                style={{ width: `${Math.max(2, result.riskPercentage)}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-gray-600 mt-2">
-              <span>0% (Low)</span>
-              <span>100% (Very High)</span>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>Low (&lt;25%)</span>
+              <span>Moderate (25–45%)</span>
+              <span>High (≥45%)</span>
             </div>
           </div>
 
-          {/* Risk Interpretation */}
+          {/* Interpretation */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-900">
                 {result.riskCategory === 'Low' && (
                   <p>
-                    Your cardiovascular risk is <strong>low</strong>. Continue with healthy lifestyle
-                    habits including regular exercise, balanced diet, and stress management.
+                    Cardiovascular risk is <strong>low</strong>. Continue healthy lifestyle habits —
+                    regular exercise, balanced diet, and adequate sleep.
                   </p>
                 )}
                 {result.riskCategory === 'Moderate' && (
                   <p>
-                    Your cardiovascular risk is <strong>moderate</strong>. Consider scheduling a
-                    consultation with your healthcare provider and implementing preventive measures.
+                    Cardiovascular risk is <strong>moderate</strong>. Schedule a consultation with
+                    your healthcare provider and consider preventive measures.
                   </p>
                 )}
                 {result.riskCategory === 'High' && (
                   <p>
-                    Your cardiovascular risk is <strong>high</strong>. It is recommended to schedule an
-                    appointment with a cardiologist for further evaluation and treatment planning.
-                  </p>
-                )}
-                {result.riskCategory === 'Very High' && (
-                  <p>
-                    Your cardiovascular risk is <strong>very high</strong>. Please seek immediate medical
-                    attention and consult with a cardiologist. This assessment requires professional
-                    clinical evaluation.
+                    Cardiovascular risk is <strong>high</strong>. Prompt evaluation by a cardiologist
+                    is recommended for further workup and treatment planning.
                   </p>
                 )}
               </div>
@@ -110,293 +151,143 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
         </CardContent>
       </Card>
 
-      {/* Assessment Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Feature Contribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-clinical-primary" />
-              Feature Contributions
-            </CardTitle>
-            <CardDescription>Relative impact of each clinical parameter</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={featureData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {featureData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        [
-                          '#8b5cf6',
-                          '#06b6d4',
-                          '#f59e0b',
-                          '#10b981',
-                          '#ef4444',
-                          '#3b82f6',
-                          '#ec4899',
-                          '#6366f1',
-                          '#f97316',
-                          '#14b8a6',
-                          '#6b7280',
-                          '#d946ef',
-                        ][index % 12]
-                      }
-                    />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `${value}%`} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Risk Metrics */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gauge className="h-5 w-5 text-clinical-primary" />
-              Key Metrics
-            </CardTitle>
-            <CardDescription>Normalized parameter values</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {result.normalizedValues.slice(0, 8).map((value, idx) => (
-                <div key={idx} className="pb-3 border-b last:border-b-0">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-sm font-medium text-gray-700">{value.name}</span>
-                    <span className="text-sm font-semibold text-clinical-primary">
-                      {value.normalizedValue.toFixed(3)}
-                    </span>
-                  </div>
-                  <div className="flex gap-2 items-center text-xs text-gray-600">
-                    <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded">
-                      Raw: {
-                        typeof value.rawValue === 'number'
-                          ? value.rawValue.toFixed(2)
-                          : value.rawValue
-                      }
-                    </span>
-                    <span className="text-gray-500">→</span>
-                    <span className="text-xs italic text-gray-600">{value.method}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Entropy Weights Analysis */}
+      {/* ── Score Breakdown ──────────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-clinical-primary" />
-            Entropy-Based Weight Analysis
+            <Layers className="h-5 w-5 text-clinical-primary" />
+            Two-Stage Score Breakdown
           </CardTitle>
           <CardDescription>
-            Information entropy calculation for feature importance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">
-              This assessment uses <strong>Information Entropy</strong> to calculate the relative importance of each
-              clinical parameter. The entropy weight method ensures that features with greater discriminatory power
-              receive higher weights in the final risk score calculation.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Entropy Values */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-blue-900 mb-3">Information Entropy</h4>
-                <div className="space-y-2 text-xs">
-                  {Object.entries(result.entropyWeights.entropies)
-                    .slice(0, 5)
-                    .map(([feature, value]) => (
-                      <div key={feature} className="flex justify-between">
-                        <span className="text-gray-700">{feature}:</span>
-                        <span className="font-mono font-semibold text-blue-700">
-                          {(value as number).toFixed(4)}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* Divergence Values */}
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-purple-900 mb-3">Divergence (d_j)</h4>
-                <div className="space-y-2 text-xs">
-                  {Object.entries(result.entropyWeights.divergences)
-                    .slice(0, 5)
-                    .map(([feature, value]) => (
-                      <div key={feature} className="flex justify-between">
-                        <span className="text-gray-700">{feature}:</span>
-                        <span className="font-mono font-semibold text-purple-700">
-                          {(value as number).toFixed(4)}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* Final Weights */}
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-emerald-900 mb-3">Final Weights (w_j)</h4>
-                <div className="space-y-2 text-xs">
-                  {Object.entries(result.entropyWeights.weights)
-                    .slice(0, 5)
-                    .map(([feature, value]) => (
-                      <div key={feature} className="flex justify-between">
-                        <span className="text-gray-700">{feature}:</span>
-                        <span className="font-mono font-semibold text-emerald-700">
-                          {((value as number) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
-              <strong>Calculation Process:</strong>
-              <ol className="list-decimal list-inside mt-2 space-y-1 text-xs">
-                <li>Information Entropy (E_j) = -k × Σ(P_ij × ln(P_ij)) where k = 1/ln(m)</li>
-                <li>Divergence (d_j) = 1 - E_j</li>
-                <li>Final Weight (w_j) = d_j / Σ(d_j)</li>
-                <li>SAW Score (V) = Σ(w_j × r_ij)</li>
-              </ol>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Calibration & Adjustments */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Calibration & Population Adjustments</CardTitle>
-          <CardDescription>
-            JAKVAS calibration for Indonesian population specificity
+            V_final = 0.70 × V1 (Heart dataset) + 0.30 × V2 (Cardio dataset)
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-semibold text-blue-900 mb-2">JAKVAS Calibration</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {result.calibrationFactors.jakvasCalibration.toFixed(3)}x
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">
+                Stage 1 — V1
               </p>
-              <p className="text-xs text-gray-600 mt-2">
-                Adjustment for Indonesian population epidemiology
+              <p className="text-3xl font-bold text-blue-600">
+                {(result.v1Score * 100).toFixed(1)}%
               </p>
+              <p className="text-xs text-gray-600 mt-1">Heart dataset (15 features)</p>
+              <p className="text-xs text-gray-500">λ₁ = 0.70</p>
             </div>
 
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <p className="text-sm font-semibold text-purple-900 mb-2">Imbalance Correction</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {result.calibrationFactors.imbalanceCorrection.toFixed(3)}x
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+              <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">
+                Stage 2 — V2
               </p>
-              <p className="text-xs text-gray-600 mt-2">
-                Adjustment for training data class imbalance
+              <p className="text-3xl font-bold text-purple-600">
+                {(result.v2Score * 100).toFixed(1)}%
               </p>
+              <p className="text-xs text-gray-600 mt-1">Cardio dataset (9 features)</p>
+              <p className="text-xs text-gray-500">λ₂ = 0.30</p>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-              <p className="text-sm font-semibold text-emerald-900 mb-2">Population Adjustment</p>
-              <p className="text-2xl font-bold text-emerald-600">
-                {result.calibrationFactors.populationAdjustment.toFixed(3)}x
+            <div className={`border-2 rounded-lg p-4 text-center ${bgBorder}`}>
+              <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${textColor}`}>
+                Final Score — V_final
               </p>
-              <p className="text-xs text-gray-600 mt-2">
-                Additional demographic adjustments
+              <p className={`text-3xl font-bold ${textColor}`}>
+                {(result.vFinal * 100).toFixed(1)}%
+              </p>
+              <p className="text-xs text-gray-600 mt-1">{result.riskCategory} Risk</p>
+              <p className="text-xs text-gray-500">
+                Threshold: Low &lt;25% | Moderate &lt;45% | High ≥45%
               </p>
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg text-sm text-gray-700">
-            <strong>About These Adjustments:</strong>
-            <ul className="list-disc list-inside mt-2 space-y-1 text-xs">
-              <li>
-                <strong>JAKVAS Calibration:</strong> Jakarta Vascular Score adjustments specific to
-                Indonesian cardiovascular epidemiology and demographic risk factors
-              </li>
-              <li>
-                <strong>Imbalance Correction:</strong> Accounts for underrepresentation of cardiovascular
-                disease cases in typical population health datasets
-              </li>
-              <li>
-                <strong>Population Adjustment:</strong> Ensures model applicability across different
-                Indonesian population subgroups
-              </li>
-            </ul>
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 font-mono text-center">
+            V_final = 0.70 × {(result.v1Score * 100).toFixed(2)}% + 0.30 ×{' '}
+            {(result.v2Score * 100).toFixed(2)}% ={' '}
+            <strong>{(result.vFinal * 100).toFixed(2)}%</strong>
           </div>
         </CardContent>
       </Card>
 
-      {/* Feature Details Table */}
+      {/* ── Top Contributors ─────────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle>Detailed Feature Analysis</CardTitle>
-          <CardDescription>Raw values, normalization, and contribution to final score</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-clinical-primary" />
+            Top Risk Contributions — Stage 1
+          </CardTitle>
+          <CardDescription>
+            Features ranked by weighted contribution to V1 score (pre-trained weights, ROC-AUC 0.8044)
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-3 font-semibold text-gray-700">Feature</th>
-                  <th className="text-right py-3 px-3 font-semibold text-gray-700">Raw Value</th>
-                  <th className="text-right py-3 px-3 font-semibold text-gray-700">Normalized</th>
-                  <th className="text-right py-3 px-3 font-semibold text-gray-700">Weight</th>
-                  <th className="text-right py-3 px-3 font-semibold text-gray-700">Contribution</th>
-                  <th className="text-left py-3 px-3 font-semibold text-gray-700">Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.featureScores.map((score, idx) => (
-                  <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-3 font-medium text-gray-800">{score.name}</td>
-                    <td className="text-right py-3 px-3 font-mono text-gray-700">
-                      {typeof score.rawValue === 'number' ? score.rawValue.toFixed(2) : score.rawValue}
-                    </td>
-                    <td className="text-right py-3 px-3 font-mono font-semibold text-blue-600">
-                      {score.normalizedValue.toFixed(4)}
-                    </td>
-                    <td className="text-right py-3 px-3 font-mono text-purple-600">
-                      {(score.weight * 100).toFixed(2)}%
-                    </td>
-                    <td className="text-right py-3 px-3 font-mono font-semibold text-emerald-600">
-                      {score.contribution.toFixed(4)}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span
-                        className={`text-xs font-semibold px-2 py-1 rounded ${
-                          score.type === 'Benefit'
-                            ? 'bg-blue-100 text-blue-800'
-                            : score.type === 'Cost'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-purple-100 text-purple-800'
-                        }`}
-                      >
-                        {score.type}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {result.stage1Features.slice(0, 6).map((f) => {
+              const pct = result.v1Score > 0 ? (f.contribution / result.v1Score) * 100 : 0;
+              return (
+                <div key={f.feature}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-gray-700">{f.displayName}</span>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <span className="font-mono">{f.contribution.toFixed(4)}</span>
+                      <span className="text-gray-400">({pct.toFixed(1)}%)</span>
+                    </div>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-clinical-primary rounded-full"
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Stage 1 Feature Table ────────────────────────────────────────────── */}
+      <FeatureTable
+        features={result.stage1Features}
+        title="Stage 1 — Heart Dataset Features (15)"
+        description="BRFSS 2020 population data — gradient descent trained weights (319,795 patients)"
+      />
+
+      {/* ── Stage 2 Feature Table ────────────────────────────────────────────── */}
+      <FeatureTable
+        features={result.stage2Features}
+        title="Stage 2 — Cardio Dataset Features (9)"
+        description="Blood pressure and biochemical markers — entropy-based weights (70,000 patients)"
+      />
+
+      {/* ── Methodology Note ─────────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-clinical-primary" />
+            Methodology
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg space-y-2">
+            <p>
+              <strong>Stage 1 (V1):</strong> SAW using pre-trained weights from gradient descent
+              optimization on 319,795-patient Heart dataset (BRFSS 2020). ROC-AUC = 0.8044,
+              class imbalance handled with pos_weight = 10.68.
+            </p>
+            <p>
+              <strong>Stage 2 (V2):</strong> SAW using entropy-based weights derived from
+              70,000-patient Cardio dataset. Blood pressure and biochemical markers are normalized
+              using sweet-spot ranges reflecting optimal clinical values.
+            </p>
+            <p>
+              <strong>Integration:</strong> V_final = 0.70 × V1 + 0.30 × V2. Lambda weights
+              reflect dataset size and model reliability (Stage 1 larger and clinically validated).
+            </p>
+            <p>
+              <strong>Sweet Spot Normalization:</strong> Features like BMI [18.5–24.9],
+              SleepTime [7–8h], SystolicBP [90–120], DiastolicBP [60–80] score 1.0 within
+              the optimal range and decrease linearly outside it.
+            </p>
           </div>
         </CardContent>
       </Card>
