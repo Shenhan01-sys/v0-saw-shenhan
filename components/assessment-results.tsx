@@ -4,6 +4,7 @@ import React from 'react';
 import { AssessmentResult, getRiskColor, getRiskBgColor } from '@/lib/saw-engine';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, TrendingUp, Activity, Layers } from 'lucide-react';
+import { CalculationWalkthrough } from '@/components/calculation-walkthrough';
 
 interface AssessmentResultsProps {
   result: AssessmentResult;
@@ -258,6 +259,9 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
         title="Stage 2 — Cardio Dataset Features (9)"
         description="Blood pressure and biochemical markers — entropy-based weights (70,000 patients)"
       />
+
+      {/* ── Calculation Walkthrough ──────────────────────────────────────────── */}
+      <CalculationWalkthrough result={result} />
 
       {/* ── Methodology Note ─────────────────────────────────────────────────── */}
       <Card>

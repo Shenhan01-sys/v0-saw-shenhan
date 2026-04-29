@@ -85,6 +85,7 @@ export interface FeatureScore {
   feature: string;
   displayName: string;
   rawValue: number | string;
+  numericRaw: number;          // actual number fed into normalization formula
   normalizedValue: number;
   weight: number;
   contribution: number;
@@ -283,6 +284,7 @@ export function assessCardiovascularRisk(p: PatientData): AssessmentResult {
       feature:         feat,
       displayName:     STAGE1_DISPLAY[feat] ?? feat,
       rawValue:        getRawValue1(feat, p),
+      numericRaw:      getNumericRaw1(feat, p),
       normalizedValue: r,
       weight:          w,
       contribution:    w * r,
@@ -300,6 +302,7 @@ export function assessCardiovascularRisk(p: PatientData): AssessmentResult {
       feature:         feat,
       displayName:     STAGE2_DISPLAY[feat] ?? feat,
       rawValue:        getRawValue2(feat, p),
+      numericRaw:      getNumericRaw2(feat, p),
       normalizedValue: r,
       weight:          w,
       contribution:    w * r,
@@ -367,6 +370,42 @@ function getRawValue2(feat: string, p: PatientData): number | string {
     case 'SystolicBP_normalized': return `${p.systolicBP} mmHg`;
     case 'DiastolicBP_normalized':return `${p.diastolicBP} mmHg`;
     default:                      return '';
+  }
+}
+
+function getNumericRaw1(feat: string, p: PatientData): number {
+  switch (feat) {
+    case 'AgeCategory':          return p.ageCategory;
+    case 'Stroke':               return p.stroke;
+    case 'DiffWalking':          return p.diffWalking;
+    case 'Smoking':              return p.smoking;
+    case 'SkinCancer':           return p.skinCancer;
+    case 'PhysicalHealth':       return p.physicalHealth;
+    case 'Diabetic':             return p.diabetic;
+    case 'KidneyDisease':        return p.kidneyDisease;
+    case 'Asthma':               return p.asthma;
+    case 'PhysicalActivity':     return p.physicalActivity;
+    case 'GenHealth':            return p.genHealth;
+    case 'MentalHealth':         return p.mentalHealth;
+    case 'BMI_normalized':       return p.bmi;
+    case 'AlcoholDrinking':      return p.alcoholDrinking;
+    case 'SleepTime_normalized': return p.sleepTime;
+    default:                     return 0;
+  }
+}
+
+function getNumericRaw2(feat: string, p: PatientData): number {
+  switch (feat) {
+    case 'Smoking':               return p.smoking;
+    case 'AlcoholDrinking':       return p.alcoholDrinking;
+    case 'PhysicalActivity':      return p.physicalActivity;
+    case 'CholesterolLevel':      return p.cholesterol;
+    case 'GlucoseLevel':          return p.glucose;
+    case 'BMI_normalized':        return p.bmi;
+    case 'BMIScale_normalized':   return getBMIScale(p.bmi);
+    case 'SystolicBP_normalized': return p.systolicBP;
+    case 'DiastolicBP_normalized':return p.diastolicBP;
+    default:                      return 0;
   }
 }
 
