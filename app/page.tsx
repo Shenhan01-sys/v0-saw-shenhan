@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { PatientForm } from '@/components/patient-form';
 import { AssessmentResults } from '@/components/assessment-results';
 import { PatientData, assessCardiovascularRisk, AssessmentResult } from '@/lib/saw-engine';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Home, History } from 'lucide-react';
 
 export default function Page() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'assessment' | 'methodology' | 'history'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'assessment' | 'history'>('home');
   const [assessment, setAssessment] = useState<AssessmentResult | null>(null);
   const [assessmentHistory, setAssessmentHistory] = useState<
     Array<{
@@ -64,15 +65,16 @@ export default function Page() {
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Home</span>
               </Button>
-              <Button
-                variant={currentPage === 'methodology' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCurrentPage('methodology')}
-                className="flex items-center gap-2"
-              >
-                <BookOpen className="h-4 w-4" />
-                <span className="hidden sm:inline">Methodology</span>
-              </Button>
+              <Link href="/methodology">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">Methodology</span>
+                </Button>
+              </Link>
               <Button
                 variant={currentPage === 'history' ? 'default' : 'outline'}
                 size="sm"
@@ -177,153 +179,7 @@ export default function Page() {
           </div>
         )}
 
-        {/* Methodology Page */}
-        {currentPage === 'methodology' && (
-          <div className="space-y-8 max-w-4xl">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Methodology</h2>
 
-            {/* Overview */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Overview</h3>
-              <p className="text-gray-700 mb-4">
-                This system implements a multi-stage cardiovascular risk assessment framework based
-                on the Simple Weighted Additive (SAW) model with entropy-based feature weighting.
-                The methodology incorporates JAKVAS (Jakarta Vascular Score) calibration for
-                Indonesian population applicability and uses sweet spot normalization for health
-                metrics with optimal ranges.
-              </p>
-            </div>
-
-            {/* Normalization Methods */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Normalization Methods</h3>
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h4 className="font-semibold text-gray-900">Benefit Criterion</h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Higher values are better: r_ij = value / max(value)
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Used for: Maximum Heart Rate, Physical Activity, ST Slope
-                  </p>
-                </div>
-                <div className="border-l-4 border-red-500 pl-4">
-                  <h4 className="font-semibold text-gray-900">Cost Criterion</h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Lower values are better: r_ij = min(value) / value
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Used for: Age, Blood Pressure, Cholesterol, Glucose, ST Depression, Smoking,
-                    Diabetes
-                  </p>
-                </div>
-                <div className="border-l-4 border-purple-500 pl-4">
-                  <h4 className="font-semibold text-gray-900">Sweet Spot Criterion</h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Optimal values within a range: r_ij = 1 if a ≤ value ≤ b, value/a if value {`<`}
-                    a, b/value if value {`>`} b
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Used for: BMI [18.5-24.9 kg/m²], Sleep Time [7-8 hours]
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Entropy Weight Calculation */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Entropy-Based Weight Calculation</h3>
-              <div className="space-y-3 text-sm text-gray-700">
-                <p>
-                  The system uses Information Entropy to calculate the relative importance of each
-                  feature:
-                </p>
-                <div className="bg-gray-50 p-4 rounded font-mono text-xs space-y-2">
-                  <p>
-                    <strong>Step 1 - Calculate Entropy:</strong>
-                  </p>
-                  <p className="ml-4">E_j = -k × Σ(P_ij × ln(P_ij))</p>
-                  <p className="ml-4">where k = 1/ln(m) and m = number of alternatives</p>
-
-                  <p className="mt-3">
-                    <strong>Step 2 - Calculate Divergence:</strong>
-                  </p>
-                  <p className="ml-4">d_j = 1 - E_j</p>
-
-                  <p className="mt-3">
-                    <strong>Step 3 - Normalize Weights:</strong>
-                  </p>
-                  <p className="ml-4">w_j = d_j / Σ(d_j)</p>
-                </div>
-                <p className="text-gray-600 mt-3">
-                  Features with greater discriminatory power (higher divergence) receive higher weights
-                  in the final assessment.
-                </p>
-              </div>
-            </div>
-
-            {/* SAW Score Calculation */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">SAW Score Calculation</h3>
-              <p className="text-sm text-gray-700 mb-3">
-                The final Simple Weighted Additive score is calculated as:
-              </p>
-              <div className="bg-gray-50 p-4 rounded font-mono text-sm mb-3">
-                <p>V = Σ(w_j × r_ij)</p>
-                <p className="text-xs text-gray-600 mt-2">
-                  where w_j = entropy-based weight for feature j, r_ij = normalized value for feature
-                  j
-                </p>
-              </div>
-              <p className="text-sm text-gray-600">
-                The score is normalized to [0, 1] and then adjusted using calibration factors for
-                population specificity and class imbalance.
-              </p>
-            </div>
-
-            {/* Calibration */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">JAKVAS Calibration</h3>
-              <p className="text-sm text-gray-700 mb-3">
-                Jakarta Vascular Score (JAKVAS) calibration adjusts the model for Indonesian
-                population characteristics:
-              </p>
-              <ul className="text-sm text-gray-700 space-y-2 ml-4 list-disc">
-                <li>Age-specific risk adjustments based on Indonesian epidemiology</li>
-                <li>Gender-specific modifications for cardiovascular risk distribution</li>
-                <li>Smoking prevalence adjustments for male populations</li>
-                <li>Population subgroup normalization across Indonesian regions</li>
-              </ul>
-            </div>
-
-            {/* Risk Categories */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Risk Categories</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-green-50 border border-green-200 p-4 rounded">
-                  <p className="font-semibold text-green-900">Low Risk</p>
-                  <p className="text-sm text-green-800 mt-1">Score: 0.00 - 0.25</p>
-                  <p className="text-xs text-gray-600 mt-2">Continue healthy lifestyle habits</p>
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
-                  <p className="font-semibold text-yellow-900">Moderate Risk</p>
-                  <p className="text-sm text-yellow-800 mt-1">Score: 0.25 - 0.50</p>
-                  <p className="text-xs text-gray-600 mt-2">Implement preventive measures</p>
-                </div>
-                <div className="bg-orange-50 border border-orange-200 p-4 rounded">
-                  <p className="font-semibold text-orange-900">High Risk</p>
-                  <p className="text-sm text-orange-800 mt-1">Score: 0.50 - 0.75</p>
-                  <p className="text-xs text-gray-600 mt-2">Consult cardiologist</p>
-                </div>
-                <div className="bg-red-50 border border-red-200 p-4 rounded">
-                  <p className="font-semibold text-red-900">Very High Risk</p>
-                  <p className="text-sm text-red-800 mt-1">Score: 0.75 - 1.00</p>
-                  <p className="text-xs text-gray-600 mt-2">Seek immediate medical attention</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* History Page */}
         {currentPage === 'history' && (
