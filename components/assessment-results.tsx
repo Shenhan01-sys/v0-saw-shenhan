@@ -1,10 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AssessmentResult, getRiskColor, getRiskBgColor } from '@/lib/saw-engine';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, TrendingUp, Activity, Layers } from 'lucide-react';
 import { CalculationWalkthrough } from '@/components/calculation-walkthrough';
+import CountUp from '@/components/animations/CountUp';
+import ParticlesEffect from '@/components/animations/ParticlesEffect';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 
 interface AssessmentResultsProps {
   result: AssessmentResult;
@@ -80,6 +83,31 @@ function FeatureTable({
 }
 
 export function AssessmentResults({ result, timestamp }: AssessmentResultsProps) {
+  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    sectionRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const addToRefs = (el: HTMLElement | null, index: number) => {
+    sectionRefs.current[index] = el;
+  };
+
   const bgBorder = getRiskBgColor(result.riskCategory);
   const textColor = getRiskColor(result.riskCategory);
 
@@ -93,13 +121,25 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
   return (
     <div className="w-full space-y-6">
       {/* ── Main Risk Card ───────────────────────────────────────────────────── */}
-      <Card className={`border-2 ${bgBorder}`}>
-        <CardHeader className="pb-4">
+      <Card ref={(el) => addToRefs(el, 0)} className={`border-2 ${bgBorder} relative overflow-hidden scroll-animate`}>
+        <div className="absolute inset-0 pointer-events-none">
+          <ParticlesEffect
+            particleCount={80}
+            particleSpread={8}
+            speed={0.08}
+            particleColors={['#3b82f6', '#6366f1', '#8b5cf6', '#06b6d4']}
+            particleBaseSize={60}
+            sizeRandomness={0.5}
+            disableRotation={true}
+            className="opacity-40"
+          />
+        </div>
+        <CardHeader className="pb-4 relative z-10">
           <CardTitle className={`text-4xl font-bold ${textColor}`}>
             {result.riskCategory} Risk
           </CardTitle>
           <CardDescription className="text-lg mt-2">
-            Cardiovascular Risk Score: {result.riskPercentage}%
+            Cardiovascular Risk Score: <CountUp to={result.riskPercentage} duration={1.5} decimals={0} suffix="%" className="font-bold text-clinical-primary" />
           </CardDescription>
           {timestamp && (
             <p className="text-xs text-gray-500 mt-1">
@@ -153,7 +193,7 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
       </Card>
 
       {/* ── Score Breakdown ──────────────────────────────────────────────────── */}
-      <Card>
+      <Card ref={(el) => addToRefs(el, 1)} className="scroll-animate-right">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5 text-clinical-primary" />
@@ -163,45 +203,70 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
             V_final = 0.70 × V1 (Heart dataset) + 0.30 × V2 (Cardio dataset)
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+        <CardContent className="space-y-6">
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: 'V1\n(Stage 1)', value: result.v1Score * 100, color: '#3b82f6', weight: 'λ₁ = 0.70' },
+                  { name: 'V2\n(Stage 2)', value: result.v2Score * 100, color: '#8b5cf6', weight: 'λ₂ = 0.30' },
+                  { name: 'V_final', value: result.vFinal * 100, color: result.riskPercentage < 25 ? '#22c55e' : result.riskPercentage < 45 ? '#eab308' : '#ef4444', weight: 'Final' },
+                ]}
+                margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+              >
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} unit="%" />
+                <Tooltip
+                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={80}>
+                  {[
+                    { name: 'V1\n(Stage 1)', value: result.v1Score * 100, color: '#3b82f6', weight: 'λ₁ = 0.70' },
+                    { name: 'V2\n(Stage 2)', value: result.v2Score * 100, color: '#8b5cf6', weight: 'λ₂ = 0.30' },
+                    { name: 'V_final', value: result.vFinal * 100, color: result.riskPercentage < 25 ? '#22c55e' : result.riskPercentage < 45 ? '#eab308' : '#ef4444', weight: 'Final' },
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                  <LabelList dataKey="value" position="top" formatter={(v: number) => `${v.toFixed(1)}%`} style={{ fontSize: 13, fontWeight: 600 }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
               <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">
                 Stage 1 — V1
               </p>
-              <p className="text-3xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-blue-600">
                 {(result.v1Score * 100).toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-600 mt-1">Heart dataset (15 features)</p>
-              <p className="text-xs text-gray-500">λ₁ = 0.70</p>
+              <p className="text-xs text-gray-500 mt-1">λ₁ = 0.70</p>
             </div>
 
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
               <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">
                 Stage 2 — V2
               </p>
-              <p className="text-3xl font-bold text-purple-600">
+              <p className="text-2xl font-bold text-purple-600">
                 {(result.v2Score * 100).toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-600 mt-1">Cardio dataset (9 features)</p>
-              <p className="text-xs text-gray-500">λ₂ = 0.30</p>
+              <p className="text-xs text-gray-500 mt-1">λ₂ = 0.30</p>
             </div>
 
-            <div className={`border-2 rounded-lg p-4 text-center ${bgBorder}`}>
+            <div className={`border-2 rounded-lg p-3 text-center ${bgBorder}`}>
               <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${textColor}`}>
-                Final Score — V_final
+                Final — V_final
               </p>
-              <p className={`text-3xl font-bold ${textColor}`}>
+              <p className={`text-2xl font-bold ${textColor}`}>
                 {(result.vFinal * 100).toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-600 mt-1">{result.riskCategory} Risk</p>
-              <p className="text-xs text-gray-500">
-                Threshold: Low &lt;25% | Moderate &lt;45% | High ≥45%
-              </p>
+              <p className="text-xs text-gray-500 mt-1">{result.riskCategory}</p>
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 font-mono text-center">
+          <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 font-mono text-center">
             V_final = 0.70 × {(result.v1Score * 100).toFixed(2)}% + 0.30 ×{' '}
             {(result.v2Score * 100).toFixed(2)}% ={' '}
             <strong>{(result.vFinal * 100).toFixed(2)}%</strong>
@@ -210,7 +275,7 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
       </Card>
 
       {/* ── Top Contributors ─────────────────────────────────────────────────── */}
-      <Card>
+      <Card ref={(el) => addToRefs(el, 2)} className="scroll-animate-left">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-clinical-primary" />
@@ -247,24 +312,30 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
       </Card>
 
       {/* ── Stage 1 Feature Table ────────────────────────────────────────────── */}
-      <FeatureTable
-        features={result.stage1Features}
-        title="Stage 1 — Heart Dataset Features (15)"
-        description="BRFSS 2020 population data — gradient descent trained weights (319,795 patients)"
-      />
+      <div ref={(el) => addToRefs(el, 3)} className="scroll-animate-scale">
+        <FeatureTable
+          features={result.stage1Features}
+          title="Stage 1 — Heart Dataset Features (15)"
+          description="BRFSS 2020 population data — gradient descent trained weights (319,795 patients)"
+        />
+      </div>
 
       {/* ── Stage 2 Feature Table ────────────────────────────────────────────── */}
-      <FeatureTable
-        features={result.stage2Features}
-        title="Stage 2 — Cardio Dataset Features (9)"
-        description="Blood pressure and biochemical markers — entropy-based weights (70,000 patients)"
-      />
+      <div ref={(el) => addToRefs(el, 4)} className="scroll-animate">
+        <FeatureTable
+          features={result.stage2Features}
+          title="Stage 2 — Cardio Dataset Features (9)"
+          description="Blood pressure and biochemical markers — entropy-based weights (70,000 patients)"
+        />
+      </div>
 
       {/* ── Calculation Walkthrough ──────────────────────────────────────────── */}
-      <CalculationWalkthrough result={result} />
+      <div ref={(el) => addToRefs(el, 5)} className="scroll-animate-right">
+        <CalculationWalkthrough result={result} />
+      </div>
 
       {/* ── Methodology Note ─────────────────────────────────────────────────── */}
-      <Card>
+      <Card ref={(el) => addToRefs(el, 6)} className="scroll-animate">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-clinical-primary" />
