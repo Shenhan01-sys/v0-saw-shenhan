@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { AssessmentResult, FeatureScore } from '@/lib/saw-engine';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,12 +73,14 @@ function Step({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const contentRef = useRef<HTMLDivElement>(null);
+
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        className="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-left"
       >
         <div className="flex items-center gap-3">
           <span className="flex-shrink-0 w-7 h-7 rounded-full bg-clinical-primary text-white text-xs font-bold flex items-center justify-center">
@@ -91,13 +93,31 @@ function Step({
             </span>
           )}
         </div>
-        {open ? (
-          <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-gray-500 flex-shrink-0" />
-        )}
+        <div className="flex items-center gap-2">
+          <span className={`text-xs text-gray-500 transition-all duration-200 ${open ? 'opacity-100' : 'opacity-0'}`}>
+            Expand
+          </span>
+          <div className="transition-transform duration-300 ease-out">
+            {open ? (
+              <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0 rotate-180" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            )}
+          </div>
+        </div>
       </button>
-      {open && <div className="px-5 py-4 bg-white">{children}</div>}
+      <div
+        ref={contentRef}
+        className="overflow-hidden transition-all duration-300 ease-out"
+        style={{
+          maxHeight: open ? '2000px' : '0',
+          opacity: open ? 1 : 0,
+        }}
+      >
+        <div className="px-5 py-4 bg-white">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
