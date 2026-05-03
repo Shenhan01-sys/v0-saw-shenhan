@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertCircle } from 'lucide-react';
+import AnimatedContent from '@/components/animations/AnimatedContent';
 
 interface PatientFormProps {
   onSubmit: (data: PatientData) => void;
@@ -425,12 +426,19 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <Card className="border-clinical-border">
+      <Card className="border-clinical-border overflow-hidden">
         <CardHeader className="bg-clinical-header">
-          <CardTitle className="text-clinical-primary">{currentStep.title}</CardTitle>
-          <CardDescription>{currentStep.description}</CardDescription>
+          <div className="transition-all duration-300 ease-out">
+            <CardTitle className="text-clinical-primary">{currentStep.title}</CardTitle>
+            <CardDescription>{currentStep.description}</CardDescription>
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
+          <div
+            key={step}
+            className="animate-slide-in-up"
+            style={{ animationDuration: '300ms', animationFillMode: 'both' }}
+          >
           {errors.length > 0 && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
               <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -446,7 +454,9 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
           )}
 
           {currentStep.fields}
+          </div>
 
+          <AnimatedContent direction="up" delay={100}>
           <div className="mt-8 flex gap-3">
             {step > 0 && (
               <Button type="button" variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
@@ -457,7 +467,7 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
               <Button
                 type="button"
                 onClick={() => setStep(step + 1)}
-                className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90"
+                className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90 animate-hover-lift animate-click-press"
               >
                 Next
               </Button>
@@ -465,18 +475,25 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90"
+                className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90 disabled:opacity-50 animate-hover-lift animate-click-press"
               >
                 {isLoading ? 'Analyzing...' : 'Assess Risk'}
               </Button>
             )}
           </div>
+          </AnimatedContent>
 
           <div className="mt-4 flex gap-1 justify-center">
             {steps.map((_, i) => (
               <div
                 key={i}
-                className={`h-2 w-8 rounded-full ${i === step ? 'bg-clinical-primary' : 'bg-gray-200'}`}
+                className={`h-2 rounded-full transition-all duration-300 ease-out ${
+                  i === step 
+                    ? 'bg-clinical-primary w-8' 
+                    : i < step 
+                      ? 'bg-clinical-primary/50 w-2' 
+                      : 'bg-gray-200 w-2'
+                }`}
               />
             ))}
           </div>
