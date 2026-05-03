@@ -7,6 +7,7 @@ import { AssessmentResults } from '@/components/assessment-results';
 import { PatientData, assessCardiovascularRisk, AssessmentResult } from '@/lib/saw-engine';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Home, History } from 'lucide-react';
+import AuroraBackground from '@/components/animations/AuroraBackground';
 
 const AGE_LABELS: Record<number, string> = {
   1: '18–24', 2: '25–29', 3: '30–34', 4: '35–39', 5: '40–44',
@@ -46,9 +47,17 @@ export default function Page() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+      <AuroraBackground
+        colorStops={['#3b82f6', '#6366f1', '#8b5cf6']}
+        amplitude={0.6}
+        blend={0.3}
+        speed={0.4}
+        className="opacity-30 pointer-events-none"
+      />
+      <div className="relative z-10">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-clinical-border shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-clinical-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -66,13 +75,13 @@ export default function Page() {
                 variant={currentPage === 'home' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setCurrentPage('home')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 animate-hover-lift"
               >
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Home</span>
               </Button>
               <Link href="/methodology">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 animate-hover-lift">
                   <BookOpen className="h-4 w-4" />
                   <span className="hidden sm:inline">Methodology</span>
                 </Button>
@@ -81,7 +90,7 @@ export default function Page() {
                 variant={currentPage === 'history' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setCurrentPage('history')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 animate-hover-lift"
               >
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">
@@ -97,7 +106,7 @@ export default function Page() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Home */}
         {currentPage === 'home' && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-slide-in-left">
             <div className="text-center mb-8">
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
                 Cardiovascular Risk Assessment
@@ -154,10 +163,10 @@ export default function Page() {
 
         {/* Assessment Results */}
         {currentPage === 'assessment' && assessment && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-slide-in-right">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-3xl font-bold text-gray-900">Assessment Results</h2>
-              <Button variant="outline" onClick={() => setCurrentPage('home')}>
+              <Button variant="outline" onClick={() => setCurrentPage('home')} className="animate-hover-lift">
                 New Assessment
               </Button>
             </div>
@@ -167,7 +176,7 @@ export default function Page() {
 
         {/* History */}
         {currentPage === 'history' && (
-          <div className="space-y-6 max-w-4xl">
+          <div className="space-y-6 max-w-4xl animate-slide-in-up">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Assessment History</h2>
 
             {history.length === 0 ? (
@@ -255,6 +264,7 @@ export default function Page() {
           </p>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
