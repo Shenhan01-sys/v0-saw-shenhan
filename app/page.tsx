@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Home, History, Activity, Heart, Shield } from 'lucide-react';
 import AuroraBackground from '@/components/animations/AuroraBackground';
 import AnimatedBackgroundGradient from '@/components/animations/AnimatedBackgroundGradient';
-import { MorphingCard, GlassmorphismCard, AnimatedProgress3D, TypewriterText, Floating3DIcon, RippleButton } from '@/components/animations/creative-ui';
+import { MorphingCard, GlassmorphismCard, AnimatedProgress3D, TypewriterText, Floating3DIcon, RippleButton, MagneticButton, TiltCard3D, ExpandableCard, SwipeCarousel } from '@/components/animations/creative-ui';
 
 const AGE_LABELS: Record<number, string> = {
   1: '18–24', 2: '25–29', 3: '30–34', 4: '35–39', 5: '40–44',
@@ -67,32 +67,34 @@ export default function Page() {
             </div>
 
             <nav className="flex gap-2">
-              <Button
-                variant={currentPage === 'home' ? 'default' : 'outline'}
-                size="sm"
+              <MagneticButton
                 onClick={() => setCurrentPage('home')}
-                className="flex items-center gap-2 animate-hover-lift"
+                className={`text-sm px-4 py-2 ${currentPage === 'home' ? 'from-blue-600' : 'bg-white/90 backdrop-blur-sm border border-gray-200 hover:border-blue-300'}`}
               >
-                <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">Home</span>
-              </Button>
-              <Link href="/methodology">
-                <Button variant="outline" size="sm" className="flex items-center gap-2 animate-hover-lift">
-                  <BookOpen className="h-4 w-4" />
-                  <span className="hidden sm:inline">Methodology</span>
-                </Button>
-              </Link>
-              <Button
-                variant={currentPage === 'history' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCurrentPage('history')}
-                className="flex items-center gap-2 animate-hover-lift"
-              >
-                <History className="h-4 w-4" />
-                <span className="hidden sm:inline">
-                  History {history.length > 0 && `(${history.length})`}
+                <span className="flex items-center gap-2">
+                  <Home className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
                 </span>
-              </Button>
+              </MagneticButton>
+              <Link href="/methodology">
+                <MagneticButton className="text-sm px-4 py-2 bg-white/90 backdrop-blur-sm border border-gray-200">
+                  <span className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">Methodology</span>
+                  </span>
+                </MagneticButton>
+              </Link>
+              <MagneticButton
+                onClick={() => setCurrentPage('history')}
+                className={`text-sm px-4 py-2 ${currentPage === 'history' ? 'from-purple-600' : 'bg-white/90 backdrop-blur-sm border border-gray-200'}`}
+              >
+                <span className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    History {history.length > 0 && `(${history.length})`}
+                  </span>
+                </span>
+              </MagneticButton>
             </nav>
           </div>
         </div>
@@ -154,16 +156,45 @@ export default function Page() {
             </div>
 
             <div className="max-w-2xl mx-auto">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                <h3 className="font-semibold text-blue-900 mb-3">How It Works</h3>
-                <ol className="space-y-2 text-sm text-blue-800">
-                  <li><strong>1. Data Collection:</strong> Enter patient demographics, lifestyle, medical history, and blood measurements</li>
-                  <li><strong>2. Stage 1 Scoring:</strong> 15 BRFSS features → SAW with gradient-descent weights (V1)</li>
-                  <li><strong>3. Stage 2 Scoring:</strong> 9 blood/BP features → SAW with entropy weights (V2)</li>
-                  <li><strong>4. Integration:</strong> V_final = 0.70 × V1 + 0.30 × V2</li>
-                  <li><strong>5. Categorization:</strong> Low / Moderate / High based on calibrated thresholds</li>
-                </ol>
-              </div>
+              <ExpandableCard title="How It Works - Click to expand" className="mb-6">
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50/50 to-transparent">
+                    <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">1</span>
+                    <div>
+                      <p className="font-semibold text-gray-900">Data Collection</p>
+                      <p className="text-gray-600">Enter patient demographics, lifestyle, medical history, and blood measurements</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-50/50 to-transparent">
+                    <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">2</span>
+                    <div>
+                      <p className="font-semibold text-gray-900">Stage 1 Scoring</p>
+                      <p className="text-gray-600">15 BRFSS features → SAW with gradient-descent weights (V1)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-pink-50/50 to-transparent">
+                    <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-sm">3</span>
+                    <div>
+                      <p className="font-semibold text-gray-900">Stage 2 Scoring</p>
+                      <p className="text-gray-600">9 blood/BP features → SAW with entropy weights (V2)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-emerald-50/50 to-transparent">
+                    <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">4</span>
+                    <div>
+                      <p className="font-semibold text-gray-900">Integration</p>
+                      <p className="text-gray-600">V_final = 0.70 × V1 + 0.30 × V2</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-orange-50/50 to-transparent">
+                    <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm">5</span>
+                    <div>
+                      <p className="font-semibold text-gray-900">Categorization</p>
+                      <p className="text-gray-600">Low / Moderate / High based on calibrated thresholds</p>
+                    </div>
+                  </div>
+                </div>
+              </ExpandableCard>
 
               <PatientForm
                 onSubmit={handleAssessment}
