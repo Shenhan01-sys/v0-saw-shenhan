@@ -7,7 +7,6 @@ export { default as Floating3DIcon } from "./Floating3DIcon";
 export { default as GlassmorphismCard } from "./GlassmorphismCard";
 export { default as AnimatedBackgroundGradient } from "./AnimatedBackgroundGradient";
 export { default as ParallaxScrollSection } from "./ParallaxScrollSection";
-export { default as MagneticButton } from "./MagneticButton";
 export { default as ScrollReveal } from "./ScrollReveal";
 export { default as AnimatedGradientText } from "./AnimatedGradientText";
 export { default as ExpandableCard } from "./ExpandableCard";

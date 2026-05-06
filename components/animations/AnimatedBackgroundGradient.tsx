@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useId } from "react";
 
 interface AnimatedBackgroundGradientProps {
   children?: React.ReactNode;
@@ -12,7 +12,8 @@ export default function AnimatedBackgroundGradient({
   children,
   className = "",
 }: AnimatedBackgroundGradientProps) {
-  const gradientId = useMemo(() => `bg-gradient-${Math.random().toString(36).substr(2, 9)}`, []);
+  const id = useId();
+  const filterId = `noise-bg-gradient-${id.replace(/:/g, '')}`;
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
@@ -44,7 +45,7 @@ export default function AnimatedBackgroundGradient({
 
         <svg className="absolute inset-0 w-full h-full opacity-30">
           <defs>
-            <filter id={`noise-${gradientId}`}>
+            <filter id={filterId}>
               <feTurbulence
                 type="fractalNoise"
                 baseFrequency="0.8"
@@ -59,7 +60,7 @@ export default function AnimatedBackgroundGradient({
             height="100%"
             fill="url(#noise-filter)"
             opacity="0.05"
-            filter={`url(#noise-${gradientId})`}
+            filter={`url(#${filterId})`}
           />
         </svg>
 

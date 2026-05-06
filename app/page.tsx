@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Home, History, Activity, Heart, Shield } from 'lucide-react';
 import AuroraBackground from '@/components/animations/AuroraBackground';
 import AnimatedBackgroundGradient from '@/components/animations/AnimatedBackgroundGradient';
-import { MorphingCard, GlassmorphismCard, AnimatedProgress3D, TypewriterText, Floating3DIcon, RippleButton, MagneticButton, TiltCard3D, ExpandableCard, SwipeCarousel } from '@/components/animations/creative-ui';
+import { MorphingCard, GlassmorphismCard, AnimatedProgress3D, TypewriterText, Floating3DIcon, RippleButton, TiltCard3D, ExpandableCard, SwipeCarousel } from '@/components/animations/creative-ui';
 
 const AGE_LABELS: Record<number, string> = {
   1: '18–24', 2: '25–29', 3: '30–34', 4: '35–39', 5: '40–44',
@@ -67,34 +67,32 @@ export default function Page() {
             </div>
 
             <nav className="flex gap-2">
-              <MagneticButton
+              <Button
+                variant={currentPage === 'home' ? 'default' : 'outline'}
+                size="sm"
                 onClick={() => setCurrentPage('home')}
-                className={`text-sm px-4 py-2 ${currentPage === 'home' ? 'from-blue-600' : 'bg-white/90 backdrop-blur-sm border border-gray-200 hover:border-blue-300'}`}
+                className="flex items-center gap-2"
               >
-                <span className="flex items-center gap-2">
-                  <Home className="h-4 w-4" />
-                  <span className="hidden sm:inline">Home</span>
-                </span>
-              </MagneticButton>
+                <Home className="h-4 w-4" />
+                <span className="hidden sm:inline">Home</span>
+              </Button>
               <Link href="/methodology">
-                <MagneticButton className="text-sm px-4 py-2 bg-white/90 backdrop-blur-sm border border-gray-200">
-                  <span className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    <span className="hidden sm:inline">Methodology</span>
-                  </span>
-                </MagneticButton>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">Methodology</span>
+                </Button>
               </Link>
-              <MagneticButton
+              <Button
+                variant={currentPage === 'history' ? 'default' : 'outline'}
+                size="sm"
                 onClick={() => setCurrentPage('history')}
-                className={`text-sm px-4 py-2 ${currentPage === 'history' ? 'from-purple-600' : 'bg-white/90 backdrop-blur-sm border border-gray-200'}`}
+                className="flex items-center gap-2"
               >
-                <span className="flex items-center gap-2">
-                  <History className="h-4 w-4" />
-                  <span className="hidden sm:inline">
-                    History {history.length > 0 && `(${history.length})`}
-                  </span>
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  History {history.length > 0 && `(${history.length})`}
                 </span>
-              </MagneticButton>
+              </Button>
             </nav>
           </div>
         </div>
