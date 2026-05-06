@@ -51,6 +51,10 @@ const LAMBDA2 = 0.30;
 const THRESHOLD_MEDIUM = 0.25;
 const THRESHOLD_HIGH   = 0.45;
 
+// ─── Risk Adjustment Factors (Priority 2) ─────────────────────────────────
+const FAMILY_HISTORY_MULTIPLIER = 1.15;  // HR = 2.0 per ESC 2021
+const STRESS_ELEVATED_MULTIPLIER = 1.08;  // HR = 1.3-1.5 per Framingham
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -79,6 +83,27 @@ export interface PatientData {
   diastolicBP: number;     // Diastolic blood pressure (mmHg)
   cholesterol: 1 | 2 | 3; // 1=Normal, 2=Above Normal, 3=Well Above Normal
   glucose: 1 | 2 | 3;     // 1=Normal, 2=Above Normal, 3=Well Above Normal
+
+  // ─── Priority 2: Risk-Enhancing Factors (optional) ──────────────────────
+  familyHistory?: 'yes' | 'no' | 'unknown';  // Family Hx of premature CVD
+  stressScore?: number[];  // [0-4, 0-4] stress assessment responses
+}
+
+export interface AssessmentResult {
+  v1Score: number;           // Stage 1 SAW score [0,1]
+  v2Score: number;           // Stage 2 SAW score [0,1]
+  vFinalRaw: number;         // V_final before adjustments [0,1]
+  vFinal: number;            // V_final after adjustments [0,1]
+  riskCategory: RiskCategory;
+  riskPercentage: number;    // vFinal * 100
+  stage1Features: FeatureScore[];
+  stage2Features: FeatureScore[];
+  adjustmentFactors?: {
+    familyHistoryApplied: boolean;
+    familyHistoryMultiplier: number;
+    stressElevated: boolean;
+    stressMultiplier: number;
+  };
 }
 
 export interface FeatureScore {
@@ -311,7 +336,32 @@ export function assessCardiovascularRisk(p: PatientData): AssessmentResult {
   }).sort((a, b) => b.contribution - a.contribution);
 
   // ── Integration  V_final = 0.70×V1 + 0.30×V2 ────────────────────────────
-  const vFinal = LAMBDA1 * v1Score + LAMBDA2 * v2Score;
+  const vFinalRaw = LAMBDA1 * v1Score + LAMBDA2 * v2Score;
+
+  // ── Priority 2: Apply Risk-Enhancing Factor Adjustments ─────────────────
+  // These factors are NOT in the original training data, so we apply them as multipliers
+  let vFinal = vFinalRaw;
+  let familyHistoryApplied = false;
+  let familyHistoryMultiplier = 1.0;
+  let stressElevated = false;
+  let stressMultiplier = 1.0;
+
+  // Family History: positive family Hx → HR = 2.0, approximate as 15% risk increase
+  if (p.familyHistory === 'yes') {
+    familyHistoryApplied = true;
+    familyHistoryMultiplier = FAMILY_HISTORY_MULTIPLIER;
+    vFinal = Math.min(1.0, vFinal * FAMILY_HISTORY_MULTIPLIER);
+  }
+
+  // Stress Score: elevated (total > 4) → HR ~1.3-1.5, approximate as 8% increase
+  if (p.stressScore && p.stressScore.length >= 2) {
+    const totalStress = (p.stressScore[0] ?? 0) + (p.stressScore[1] ?? 0);
+    if (totalStress > 4) {
+      stressElevated = true;
+      stressMultiplier = STRESS_ELEVATED_MULTIPLIER;
+      vFinal = Math.min(1.0, vFinal * STRESS_ELEVATED_MULTIPLIER);
+    }
+  }
 
   // ── Risk Categorization ──────────────────────────────────────────────────
   let riskCategory: RiskCategory;
@@ -326,11 +376,18 @@ export function assessCardiovascularRisk(p: PatientData): AssessmentResult {
   return {
     v1Score,
     v2Score,
+    vFinalRaw,
     vFinal,
     riskCategory,
     riskPercentage: Math.round(vFinal * 100),
     stage1Features,
     stage2Features,
+    adjustmentFactors: {
+      familyHistoryApplied,
+      familyHistoryMultiplier,
+      stressElevated,
+      stressMultiplier,
+    },
   };
 }
 

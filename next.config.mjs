@@ -6,6 +6,11 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  turbopack: {
+    resolveAlias: {
+      'motion': 'framer-motion',
+    },
+  },
 }
 
 export default nextConfig

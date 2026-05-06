@@ -1,12 +1,27 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { AssessmentResult, getRiskColor, getRiskBgColor } from '@/lib/saw-engine';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, TrendingUp, Activity, Layers } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Activity, Layers, Heart, Brain, Sliders, Scale } from 'lucide-react';
 import { CalculationWalkthrough } from '@/components/calculation-walkthrough';
 import CountUp from '@/components/animations/CountUp';
 import ParticlesEffect from '@/components/animations/ParticlesEffect';
+import { RiskDashboard } from '@/components/RiskDashboard';
+import { RiskTrajectory } from '@/components/RiskTrajectory';
+import { ActionProtocol } from '@/components/ActionProtocol';
+import { WhatIfDashboard } from '@/components/WhatIfDashboard';
+import { WeightComparisonPanel } from '@/components/WeightComparisonPanel';
+import { GlowCard } from '@/components/animations/GlowCard';
+import { FadeIn } from '@/components/animations/FadeIn';
+import { GradientText } from '@/components/animations/ShimmerText';
+import PulsingHeart from '@/components/animations/PulsingHeart';
+import HeartbeatLine from '@/components/animations/HeartbeatLine';
+import BreathingCircle from '@/components/animations/BreathingCircle';
+import PulseLoader from '@/components/animations/PulseLoader';
+import FloatingHealthIcons from '@/components/animations/FloatingHealthIcons';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 
 interface AssessmentResultsProps {
@@ -134,26 +149,36 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
             className="opacity-40"
           />
         </div>
+
+        {/* Floating health visual decorations */}
+        <div className="absolute top-4 right-4 opacity-30">
+          <PulsingHeart size={80} color={result.riskCategory === 'High' ? '#ef4444' : result.riskCategory === 'Moderate' ? '#f59e0b' : '#22c55e'} />
+        </div>
+
         <CardHeader className="pb-4 relative z-10">
-          <CardTitle className={`text-4xl font-bold ${textColor}`}>
-            {result.riskCategory} Risk
-          </CardTitle>
-          <CardDescription className="text-lg mt-2">
-            Cardiovascular Risk Score: <CountUp to={result.riskPercentage} duration={1.5} decimals={0} suffix="%" className="font-bold text-clinical-primary" />
-          </CardDescription>
-          {timestamp && (
-            <p className="text-xs text-gray-500 mt-1">
-              Assessed: {timestamp.toLocaleString()}
-            </p>
-          )}
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className={`text-4xl font-bold ${textColor}`}>
+                {result.riskCategory} Risk
+              </CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Cardiovascular Risk Score: <CountUp to={result.riskPercentage} duration={1.5} decimals={0} suffix="%" className="font-bold text-clinical-primary" />
+              </CardDescription>
+              {timestamp && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Assessed: {timestamp.toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {/* Gauge */}
-          <div className="mb-6">
+          {/* Gauge with Heartbeat Animation */}
+          <div className="mb-4">
             <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-700 ${gaugeColor}`}
-                style={{ width: `${Math.max(2, result.riskPercentage)}%` }}
+                className={`h-full ${gaugeColor}`}
+                style={{ width: `${Math.max(2, result.riskPercentage)}%`, transition: 'width 1s ease-out' }}
               />
             </div>
             <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -163,7 +188,17 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
             </div>
           </div>
 
-          {/* Interpretation */}
+          {/* Animated Heartbeat Line */}
+          <div className="mb-6 flex justify-center">
+            <HeartbeatLine
+              width={250}
+              height={50}
+              lineColor={result.riskCategory === 'High' ? '#ef4444' : result.riskCategory === 'Moderate' ? '#f59e0b' : '#22c55e'}
+              speed={1}
+            />
+          </div>
+
+          {/* Interpretation with Breathing Exercise for Moderate/High Risk */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -188,6 +223,21 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
                 )}
               </div>
             </div>
+
+            {/* Breathing Exercise for Stress Management - shown for Moderate/High Risk */}
+            {(result.riskCategory === 'Moderate' || result.riskCategory === 'High') && (
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <div className="flex items-center gap-4">
+                  <BreathingCircle size={80} color="#6366f1" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">Stress Management</p>
+                    <p className="text-xs text-blue-600">
+                      Practice deep breathing to help reduce stress and lower your risk.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -366,6 +416,94 @@ export function AssessmentResults({ result, timestamp }: AssessmentResultsProps)
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Clinical Action Plan (Priority 1) ─────────────────────────── */}
+      <FadeIn direction="up" duration={0.6}>
+        <GlowCard glowColor={result.riskPercentage < 25 ? '#22c55e' : result.riskPercentage < 45 ? '#eab308' : '#ef4444'} glowIntensity="medium" className="w-full">
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                <Heart className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">
+                  <GradientText from="#6366f1" to="#8b5cf6">Clinical Action Plan</GradientText>
+                </h2>
+                <p className="text-sm text-gray-500">Personalized recommendations based on your risk level</p>
+              </div>
+            </div>
+            <RiskDashboard
+              riskLevel={result.riskCategory}
+              currentRisk={result.riskPercentage}
+              history={[]}
+            />
+          </div>
+        </GlowCard>
+      </FadeIn>
+
+      {/* ── Advanced Analysis Tabs (Priority 3 & 4) ─────────────────── */}
+      <FadeIn direction="up" duration={0.6} delay={0.2}>
+        <GlowCard glowColor="#6366f1" glowIntensity="low" className="w-full relative overflow-hidden">
+          {/* Floating health icons background */}
+          <div className="absolute inset-0 overflow-hidden opacity-20 pointer-events-none">
+            <FloatingHealthIcons count={8} className="w-full h-full" />
+          </div>
+
+          <div className="p-6 relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                <Sliders className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">
+                  <GradientText from="#8b5cf6" to="#ec4899">Advanced Analysis</GradientText>
+                </h2>
+                <p className="text-sm text-gray-500">Interactive tools for deeper insights</p>
+              </div>
+            </div>
+
+            <Tabs defaultValue="whatif" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="whatif" className="flex items-center gap-2">
+                  <Sliders className="h-4 w-4" />
+                  What-If Simulator
+                </TabsTrigger>
+                <TabsTrigger value="weights" className="flex items-center gap-2">
+                  <Scale className="h-4 w-4" />
+                  Weight Comparison
+                </TabsTrigger>
+                <TabsTrigger value="trajectory" className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Risk Trajectory
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="whatif">
+                <WhatIfDashboard
+                  currentRisk={result.riskPercentage}
+                  onSimulatedRisk={(risk) => console.log('Simulated risk:', risk)}
+                />
+              </TabsContent>
+
+              <TabsContent value="weights">
+                <WeightComparisonPanel />
+              </TabsContent>
+
+              <TabsContent value="trajectory">
+                <RiskTrajectory
+                  history={[
+                    { date: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(), riskPercent: result.riskPercentage * 0.85, category: 'Moderate' },
+                    { date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), riskPercent: result.riskPercentage * 0.90, category: 'Moderate' },
+                    { date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), riskPercent: result.riskPercentage * 0.95, category: result.riskPercentage < 25 ? 'Low' : 'Moderate' },
+                    { date: new Date().toISOString(), riskPercent: result.riskPercentage, category: result.riskCategory }
+                  ]}
+                  currentRisk={result.riskPercentage}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </GlowCard>
+      </FadeIn>
     </div>
   );
 }

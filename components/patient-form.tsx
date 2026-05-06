@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PatientData, ageToCategory, validatePatientData } from '@/lib/saw-engine';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertCircle } from 'lucide-react';
 import AnimatedContent from '@/components/animations/AnimatedContent';
+import { FamilyHistoryStep } from '@/components/steps/FamilyHistoryStep';
+import { StressAssessmentStep } from '@/components/steps/StressAssessmentStep';
 
 interface PatientFormProps {
   onSubmit: (data: PatientData) => void;
@@ -34,6 +36,8 @@ type FormState = {
   diastolicBP: number;
   cholesterol: 1 | 2 | 3;
   glucose: 1 | 2 | 3;
+  familyHistory: 'yes' | 'no' | 'unknown' | null;
+  stressScore: (number | null)[];
 };
 
 const DEFAULTS: FormState = {
@@ -56,6 +60,8 @@ const DEFAULTS: FormState = {
   diastolicBP: 70,
   cholesterol: 1,
   glucose: 1,
+  familyHistory: null,
+  stressScore: [null, null],
 };
 
 function BinaryField({
@@ -98,6 +104,16 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
   const [form, setForm] = useState<FormState>(DEFAULTS);
   const [errors, setErrors] = useState<string[]>([]);
   const [step, setStep] = useState(0);
+  const [completeStress, setCompleteStress] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Handle stress assessment completion -> trigger form submit
+  useEffect(() => {
+    if (completeStress) {
+      setCompleteStress(false);
+      formRef.current?.requestSubmit();
+    }
+  }, [completeStress]);
 
   function set<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -387,8 +403,35 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
         </div>
       ),
     },
+    {
+      title: 'Family Health History',
+      description: 'Family history of cardiovascular disease',
+      fields: (
+        <FamilyHistoryStep
+          value={form.familyHistory}
+          onChange={(v) => set('familyHistory', v)}
+          onNext={() => setStep(6)}
+          onBack={() => setStep(5)}
+        />
+      ),
+      isCustom: true,
+    },
+    {
+      title: 'Stress Assessment',
+      description: 'Chronic stress evaluation',
+      fields: (
+        <StressAssessmentStep
+          answers={form.stressScore}
+          onChange={(v) => set('stressScore', v)}
+          onNext={() => setCompleteStress(true)}
+          onBack={() => setStep(6)}
+        />
+      ),
+      isCustom: true,
+    },
   ];
 
+  const isCustomStep = step >= 6;
   const currentStep = steps[step];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -425,9 +468,9 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <Card className="border-clinical-border overflow-hidden">
-        <CardHeader className="bg-clinical-header">
+    <form ref={formRef} onSubmit={handleSubmit} className="w-full">
+      <Card className="border-clinical-border overflow-hidden rounded-xl">
+        <CardHeader className="bg-clinical-header rounded-t-xl overflow-hidden">
           <div className="transition-all duration-300 ease-out">
             <CardTitle className="text-clinical-primary">{currentStep.title}</CardTitle>
             <CardDescription>{currentStep.description}</CardDescription>
@@ -457,41 +500,50 @@ export function PatientForm({ onSubmit, isLoading = false }: PatientFormProps) {
           </div>
 
           <AnimatedContent direction="up" delay={100}>
-          <div className="mt-8 flex gap-3">
-            {step > 0 && (
-              <Button type="button" variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
-                Previous
+          {!isCustomStep && (
+            <div className="mt-8 flex gap-3">
+              {step > 0 && (
+                <Button type="button" variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
+                  Previous
+                </Button>
+              )}
+              {step < steps.length - 1 ? (
+                <Button
+                  type="button"
+                  onClick={() => setStep(step + 1)}
+                  className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90 animate-hover-lift animate-click-press"
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90 disabled:opacity-50 animate-hover-lift animate-click-press"
+                >
+                  {isLoading ? 'Analyzing...' : 'Assess Risk'}
+                </Button>
+              )}
+            </div>
+          )}
+          {isCustomStep && step === 6 && (
+            <div className="mt-4 flex gap-1 justify-center">
+              <Button type="button" variant="outline" onClick={() => setStep(5)} className="flex-1">
+                Back
               </Button>
-            )}
-            {step < steps.length - 1 ? (
-              <Button
-                type="button"
-                onClick={() => setStep(step + 1)}
-                className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90 animate-hover-lift animate-click-press"
-              >
-                Next
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 bg-clinical-primary hover:bg-clinical-primary/90 disabled:opacity-50 animate-hover-lift animate-click-press"
-              >
-                {isLoading ? 'Analyzing...' : 'Assess Risk'}
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
           </AnimatedContent>
 
           <div className="mt-4 flex gap-1 justify-center">
-            {steps.map((_, i) => (
+            {steps.map((s, i) => (
               <div
                 key={i}
                 className={`h-2 rounded-full transition-all duration-300 ease-out ${
-                  i === step 
-                    ? 'bg-clinical-primary w-8' 
-                    : i < step 
-                      ? 'bg-clinical-primary/50 w-2' 
+                  i === step
+                    ? 'bg-clinical-primary w-8'
+                    : i < step
+                      ? 'bg-clinical-primary/50 w-2'
                       : 'bg-gray-200 w-2'
                 }`}
               />
