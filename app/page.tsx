@@ -6,8 +6,10 @@ import { PatientForm } from '@/components/patient-form';
 import { AssessmentResults } from '@/components/assessment-results';
 import { PatientData, assessCardiovascularRisk, AssessmentResult } from '@/lib/saw-engine';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Home, History } from 'lucide-react';
+import { BookOpen, Home, History, Activity, Heart, Shield } from 'lucide-react';
 import AuroraBackground from '@/components/animations/AuroraBackground';
+import AnimatedBackgroundGradient from '@/components/animations/AnimatedBackgroundGradient';
+import { MorphingCard, GlassmorphismCard, AnimatedProgress3D, TypewriterText, Floating3DIcon, RippleButton } from '@/components/animations/creative-ui';
 
 const AGE_LABELS: Record<number, string> = {
   1: '18–24', 2: '25–29', 3: '30–34', 4: '35–39', 5: '40–44',
@@ -48,13 +50,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
-      <AuroraBackground
-        colorStops={['#3b82f6', '#6366f1', '#8b5cf6']}
-        amplitude={0.6}
-        blend={0.3}
-        speed={0.4}
-        className="opacity-30 pointer-events-none"
-      />
+      <AnimatedBackgroundGradient className="fixed inset-0" />
       <div className="relative z-10">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-clinical-border shadow-sm">
@@ -108,37 +104,53 @@ export default function Page() {
         {currentPage === 'home' && (
           <div className="space-y-8 animate-slide-in-left">
             <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Cardiovascular Risk Assessment
+              <h2 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                <TypewriterText text="Cardiovascular Risk Assessment" speed={40} />
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Multi-Stage SAW (Simple Additive Weighting) with Entropy-Based Weighting for
-                early detection of cardiovascular disease in Indonesian primary health care
+                Multi-Stage SAW with Entropy-Based Weighting for early detection of cardiovascular disease
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="text-3xl font-bold text-clinical-primary mb-2">24</div>
-                <p className="font-semibold text-gray-900 mb-1">Clinical Features</p>
-                <p className="text-sm text-gray-600">
-                  15 Stage-1 (Heart dataset) + 9 Stage-2 (Cardio dataset)
-                </p>
-              </div>
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="text-3xl font-bold text-clinical-primary mb-2">3</div>
-                <p className="font-semibold text-gray-900 mb-1">Risk Categories</p>
-                <p className="text-sm text-gray-600">
-                  Low (&lt;25%), Moderate (25–45%), High (≥45%)
-                </p>
-              </div>
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="text-3xl font-bold text-clinical-primary mb-2">0.80</div>
-                <p className="font-semibold text-gray-900 mb-1">ROC-AUC</p>
-                <p className="text-sm text-gray-600">
-                  Stage 1 trained on 319,795 patients (BRFSS 2020)
-                </p>
-              </div>
+              <MorphingCard glowColor="rgba(59, 130, 246, 0.6)" className="h-full">
+                <div className="flex items-center gap-4">
+                  <Floating3DIcon icon={<Activity className="h-10 w-10 text-blue-600" />} floatRange={10} duration={2} />
+                  <div>
+                    <div className="text-3xl font-bold text-clinical-primary mb-1">24</div>
+                    <p className="font-semibold text-gray-900 mb-1">Clinical Features</p>
+                    <p className="text-sm text-gray-600">
+                      15 Stage-1 + 9 Stage-2 features
+                    </p>
+                  </div>
+                </div>
+              </MorphingCard>
+
+              <MorphingCard glowColor="rgba(168, 85, 247, 0.6)" className="h-full">
+                <div className="flex items-center gap-4">
+                  <Floating3DIcon icon={<Shield className="h-10 w-10 text-purple-600" />} floatRange={12} duration={2.5} />
+                  <div>
+                    <div className="text-3xl font-bold text-clinical-primary mb-1">3</div>
+                    <p className="font-semibold text-gray-900 mb-1">Risk Categories</p>
+                    <p className="text-sm text-gray-600">
+                      Low / Moderate / High
+                    </p>
+                  </div>
+                </div>
+              </MorphingCard>
+
+              <MorphingCard glowColor="rgba(236, 72, 153, 0.6)" className="h-full">
+                <div className="flex items-center gap-4">
+                  <Floating3DIcon icon={<Heart className="h-10 w-10 text-pink-600" />} floatRange={8} duration={3} />
+                  <div>
+                    <div className="text-3xl font-bold text-clinical-primary mb-1">0.80</div>
+                    <p className="font-semibold text-gray-900 mb-1">ROC-AUC</p>
+                    <p className="text-sm text-gray-600">
+                      High accuracy model
+                    </p>
+                  </div>
+                </div>
+              </MorphingCard>
             </div>
 
             <div className="max-w-2xl mx-auto">
